@@ -89,6 +89,8 @@ def main():
         while True:
             print(colored('请输入关键字：', color='yellow'), end='')
             key = input()
+            if len(key) == 0:
+                continue
             search(key, input_path)
     else:
         print(colored('输入路径不合法，请重新输入：', color='red'), end='')

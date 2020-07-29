@@ -1,6 +1,9 @@
-import colorama
 import os
+
+import colorama
 from termcolor import colored
+
+index = 0
 
 
 def file_filter(name: str):
@@ -25,38 +28,40 @@ def walk_file(path: str):
     return arr
 
 
-def print_result(key, line_number, name, line: str, index):
+def print_result(key, line_number, name, line: str):
     """
     :param key: 关键字
     :param line_number: 行号
     :param name: 结果所在问价名
     :param line: 具体
-    :param index: 第index个结果
     :return flag: 终止输出
     """
     if index > 10:
         a = input()
         if a == 'q' or a == 'Q':  # 如果输入q/Q，终止输出
             return True
+    else:
+        print()
     print(colored(name, 'cyan'), end='')
-    print(colored('[{0}]'.format(line_number), 'cyan'), end='')
+    print(colored('[{0}]'.format(line_number), 'green'), end='')
+    print(colored('[{0}]'.format(index), 'magenta'), end='')
     print(colored(':', 'cyan'), end='')
     lines = line.split(key)
     for i, v in enumerate(lines):
         print(v, end='')
         if i != len(lines) - 1:
             print(colored(key, 'red'), end='')
-    print()
     return False
 
 
-def search_file(key, file):
+def search_file(key, file, parent_path):
     """
     :param key: 关键字
     :param file: 文件路径
+    :param parent_path 父路径
     :return: 搜索停止
     """
-    index = 0
+    global index
     with open(file, 'r', encoding='UTF-8') as f:
         try:
             line_number = 0
@@ -64,19 +69,22 @@ def search_file(key, file):
                 line_number = line_number + 1
                 if line.find(key) >= 0:
                     index = index + 1
-                    if print_result(key, line_number, f.name.split("\\")[-1], line, index):
+                    name = f.name.replace(parent_path + '\\', '')
+                    if print_result(key, line_number, name, line.strip()):
                         return True
         except UnicodeDecodeError:  # 过滤不是UTF-8编码的文件
             pass
 
 
 def search(key, path):
+    global index
+    index = 0
     if os.path.isdir(path):
         for file in walk_file(path):
-            if search_file(key, file):
+            if search_file(key, file, path):
                 return
     else:
-        search_file(key, path)
+        search_file(key, path, os.path.dirname(path))
 
 
 def main():

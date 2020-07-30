@@ -1,9 +1,31 @@
 import os
+import zipfile
 
 import colorama
-from termcolor import colored
+from colorama import Fore, Style
 
 index = 0
+
+
+class Colored:
+    """
+    description:
+        print colored str in terminal.
+    usage:
+        from colorama import Fore, Back
+        print(Colored('test', Fore.Red + Back.White))
+    available:
+        Fore:BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET
+        Back:BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE, RESET
+        Style:BRIGHT, DIM, NORMAL, RESET_ALL
+    """
+
+    def __init__(self, message, color):
+        self.message = message
+        self.color = color
+
+    def __str__(self):
+        return self.color + self.message + Style.RESET_ALL
 
 
 def file_filter(name: str):
@@ -42,15 +64,15 @@ def print_result(key, line_number, name, line: str):
             return True
     else:
         print()
-    print(colored(name, 'cyan'), end='')
-    print(colored('[{0}]'.format(line_number), 'green'), end='')
-    print(colored('[{0}]'.format(index), 'magenta'), end='')
-    print(colored(':', 'cyan'), end='')
+    print(Colored(name, Fore.YELLOW),
+          Colored('[{0}]'.format(line_number), Fore.GREEN),
+          Colored('[{0}]:'.format(index), Fore.CYAN),
+          end='', sep='')
     lines = line.split(key)
     for i, v in enumerate(lines):
         print(v, end='')
         if i != len(lines) - 1:
-            print(colored(key, 'red'), end='')
+            print(Colored(key, Fore.RED), end='')
     return False
 
 
@@ -87,21 +109,56 @@ def search(key, path):
         search_file(key, path, os.path.dirname(path))
 
 
+def unzip_file(zip_path, unzip_path):
+    """
+    :param zip_path: zip路径
+    :param unzip_path: 解压后路径
+    """
+    if not os.path.exists(unzip_path):
+        os.makedirs(unzip_path)
+    if zipfile.ZipFile(zip_path):
+        with zipfile.ZipFile(zip_path, 'r') as f:
+            f.extractall(unzip_path)
+
+
 def main():
-    print(colored('请输入文件或文件夹路径：', color='yellow'), end='')
+    print(Colored('请输入文件或文件夹路径：', Fore.YELLOW), end='')
     # 用户输入的路径
     input_path = input()
 
     # 判断输入是否合法
     while os.path.isdir(input_path) or os.path.isfile(input_path):
+        if os.path.isfile(input_path) and input_path.endswith('zip'):
+            # 文件名 ： xxx.zip
+            file_name = input_path[input_path.rindex(os.sep) + 1:]
+
+            # 解压路径 ：D:\Projects\Python\LogTools\unzip_files\xxx
+            unzip_path = os.path.join(os.getcwd(), 'unzip_files', file_name[:file_name.rindex('.')])
+
+            # 解压文件
+            unzip_file(input_path, unzip_path)
+            print(Colored('文件已解压到：%s' % unzip_path, Fore.YELLOW))
+            input_path = unzip_path
         while True:
-            print(colored('请输入关键字：', color='yellow'), end='')
+            print(Colored('请输入关键字：', Fore.YELLOW), end='')
             key = input()
             if len(key) == 0:
                 continue
             search(key, input_path)
     else:
-        print(colored('输入路径不合法，请重新输入：', color='red'), end='')
+        print(Colored('输入路径不合法，请重新输入：', Fore.RED), end='')
+
+
+log_root = os.path.join(os.path.abspath(os.getcwd() + os.sep + '.'), 'logs')
+
+
+def aop_print(*args, sep=' ', end='\n', file=None):
+    print(*args, sep=sep, end=end, file=file)
+    format_args = [msg.message for msg in args if isinstance(msg, Colored)]
+    if not os.path.exists(log_root):
+        os.makedirs(log_root)
+    with open(os.path.join(log_root, 'log.txt'), 'a+', encoding='UTF-8') as f:
+        print(*format_args, sep=sep, end=end, file=f)
 
 
 if __name__ == '__main__':
